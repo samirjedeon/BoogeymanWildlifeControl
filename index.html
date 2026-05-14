@@ -130,6 +130,7 @@ var dnrYear = new Date().getFullYear();
 
 // In-progress traps being built in the new job form
 var formTraps = [newFormTrap()];
+var formCustomer = {name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""};
 
 function newFormTrap(){
   return {loc:"", type:TRAP_TYPES[0], animal:ANIMALS[0], notes:""};
@@ -204,10 +205,10 @@ function buildJobForm(){
   var n = jobs.length+1;
   var out = '<div class="card">';
   out += '<div class="section-hdr">Customer Info</div>';
-  out += '<label>Customer name *</label><input id="jf-name" placeholder="e.g. John Smith"/>';
-  out += '<div class="r2"><div><label>Customer address</label><input id="jf-addr" placeholder="123 Main St"/></div><div><label>Phone</label><input id="jf-phone" placeholder="(517) 555-0000"/></div></div>';
-  out += '<div class="r2"><div><label>County</label><select id="jf-county">'+COUNTIES.map(function(c){ return '<option'+(c==="Eaton"?" selected":"")+'>'+c+'</option>'; }).join("")+'</select></div><div><label>Description</label><input id="jf-desc" placeholder="e.g. Raccoon in attic"/></div></div>';
-  out += '<label>Date started</label><input type="date" id="jf-date" value="'+today()+'"/>';
+  out += '<label>Customer name *</label><input id="jf-name" placeholder="e.g. John Smith" value="'+esc(formCustomer.name)+'"/>';
+  out += '<div class="r2"><div><label>Customer address</label><input id="jf-addr" placeholder="123 Main St" value="'+esc(formCustomer.addr)+'"/></div><div><label>Phone</label><input id="jf-phone" placeholder="(517) 555-0000" value="'+esc(formCustomer.phone)+'"/></div></div>';
+  out += '<div class="r2"><div><label>County</label><select id="jf-county">'+COUNTIES.map(function(c){ return '<option'+(c===formCustomer.county?" selected":"")+'>'+c+'</option>'; }).join("")+'</select></div><div><label>Description</label><input id="jf-desc" placeholder="e.g. Raccoon in attic" value="'+esc(formCustomer.desc)+'"/></div></div>';
+  out += '<label>Date started</label><input type="date" id="jf-date" value="'+( formCustomer.date||today())+'"/>';
 
   out += '<hr class="divider"/>';
   out += '<div class="section-hdr">Traps</div>';
@@ -351,14 +352,15 @@ window.toggleRel = function(){
 // ── WIRE ──────────────────────────────────────────────────────────────────────
 function wire(){
   on("btn-job", function(){
-    if(panel==="jobform"){ panel="none"; }
-    else { panel="jobform"; formTraps=[newFormTrap()]; }
+    if(panel==="jobform"){ panel="none"; formCustomer={name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""}; }
+    else { panel="jobform"; formTraps=[newFormTrap()]; formCustomer={name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""}; }
     render();
   });
   on("btn-dnr", function(){ panel=panel==="dnr"?"none":"dnr"; render(); });
 
   // Add trap row to form
   on("btn-add-trap-row", function(){
+    syncFormCustomer();
     syncFormTraps();
     formTraps.push(newFormTrap());
     render();
@@ -370,6 +372,7 @@ function wire(){
   // Remove trap row from form
   all("[data-removerow]", function(el){
     el.addEventListener("click", function(){
+      syncFormCustomer();
       syncFormTraps();
       var idx=parseInt(el.dataset.removerow);
       formTraps.splice(idx,1);
@@ -379,6 +382,7 @@ function wire(){
 
   // Save entire job
   on("do-savejob", function(){
+    syncFormCustomer();
     syncFormTraps();
     var name=gv("jf-name");
     if(!name){ alert("Customer name is required."); return; }
@@ -396,6 +400,7 @@ function wire(){
     jobs.push(newJob);
     panel="none";
     formTraps=[newFormTrap()];
+    formCustomer={name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""};
     save();
     render();
   });
@@ -458,6 +463,14 @@ function wire(){
 }
 
 // Sync form trap state from DOM before re-render
+function syncFormCustomer(){
+  var n=document.getElementById("jf-name"); if(n) formCustomer.name=n.value;
+  var a=document.getElementById("jf-addr"); if(a) formCustomer.addr=a.value;
+  var p=document.getElementById("jf-phone"); if(p) formCustomer.phone=p.value;
+  var c=document.getElementById("jf-county"); if(c) formCustomer.county=c.value;
+  var d=document.getElementById("jf-desc"); if(d) formCustomer.desc=d.value;
+  var dt=document.getElementById("jf-date"); if(dt) formCustomer.date=dt.value;
+}
 function syncFormTraps(){
   document.querySelectorAll(".tf-loc").forEach(function(el){
     var i=parseInt(el.dataset.idx);
