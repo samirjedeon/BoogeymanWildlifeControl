@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Trap Tracker — Boogeyman Wildlife Control</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f0f4;color:#111;min-height:100vh}
+.wrap{max-width:700px;margin:0 auto;padding:16px 16px 80px}
+
+.header{background:linear-gradient(135deg,#7b35cc,#5a1fa0);border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.h-title{color:#fff;font-size:20px;font-weight:700}
+.h-sub{color:#d4aaff;font-size:11px;margin-top:2px}
+.h-stats{display:flex;gap:18px}
+.stat{text-align:center}
+.stat-n{font-size:20px;font-weight:700}
+.stat-l{color:#d4aaff;font-size:10px;text-transform:capitalize}
+
+.top-btns{display:flex;gap:8px;margin-bottom:14px}
+.top-btns button{flex:1;padding:11px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;border:1.5px solid}
+#btn-job{background:#f3eaff;border-color:#c49ef0;color:#7b35cc}
+#btn-dnr{background:#f0fdf4;border-color:#86efac;color:#15803d}
+
+/* Form */
+.card{background:#fff;border:1.5px solid #c49ef0;border-radius:14px;padding:18px;margin-bottom:14px}
+.card.green{border-color:#86efac}
+.section-hdr{font-size:12px;font-weight:700;color:#7b35cc;text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px}
+.section-hdr.green{color:#15803d}
+.divider{border:none;border-top:1px solid #f0e8ff;margin:16px 0}
+
+label{font-size:11px;color:#555;display:block;margin-bottom:3px}
+input,select{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit;color:#111;background:#fff;text-align:left}
+input[type="date"]{-webkit-appearance:none;appearance:none;text-align:left;display:block;overflow:hidden;min-height:38px}
+input:focus,select:focus{outline:none;border-color:#7b35cc}
+.r2{display:flex;gap:10px}
+.r2>div{flex:1}
+
+/* Trap rows inside form */
+.trap-form-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.trap-form-item{background:#f9f5ff;border:1px solid #e0d0ff;border-radius:10px;padding:12px;position:relative}
+.trap-form-item input,.trap-form-item select{margin-bottom:8px}
+.trap-form-item input:last-of-type,.trap-form-item select:last-of-type{margin-bottom:0}
+.trap-num-label{font-size:11px;font-weight:700;color:#7b35cc;margin-bottom:8px;display:block}
+.remove-trap-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;line-height:1;padding:0;font-family:inherit}
+.remove-trap-btn:hover{color:#b91c1c}
+
+.btn-add-another{width:100%;padding:9px;background:#f9f5ff;border:1.5px dashed #c49ef0;border-radius:9px;color:#7b35cc;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px}
+.btn-save-job{width:100%;padding:11px;background:#7b35cc;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-export{width:100%;padding:10px;background:#15803d;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:12px}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:9px 4px;background:#fff;border:1.5px solid #e2e8f0;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:#666;font-family:inherit}
+.tabs button.on{background:#7b35cc;border-color:#7b35cc;color:#fff}
+
+/* Job cards */
+.job-card{background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:14px;margin-bottom:10px}
+.job-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.job-num{font-size:11px;color:#aaa;font-weight:600}
+.job-name{font-size:15px;font-weight:700;color:#111}
+.job-meta{font-size:12px;color:#666;margin-bottom:2px}
+.job-sub{font-size:11px;color:#bbb;margin-bottom:10px}
+.btn-more-traps{padding:7px 12px;background:#f9f5ff;border:1.5px dashed #c49ef0;border-radius:8px;color:#7b35cc;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* Trap items */
+.trap-item{border:1.5px solid #e8e8e8;border-radius:10px;padding:11px;margin-bottom:8px}
+.trap-item:last-child{margin-bottom:0}
+.trap-item.active-trap{border-left:4px solid #22c55e}
+.trap-item.inactive-trap{border-left:4px solid #f59e0b}
+.trap-item.archived-trap{border-left:4px solid #cbd5e1}
+.trap-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.trap-name{font-size:13px;font-weight:700;color:#222}
+.trap-meta{font-size:11px;color:#888;margin-bottom:7px}
+.badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.badge.active{background:#dcfce7;color:#15803d}
+.badge.inactive{background:#fef9c3;color:#a16207}
+.badge.archived{background:#f1f5f9;color:#64748b}
+
+.catches{background:#f9f5ff;border-radius:7px;padding:8px 10px;margin-bottom:8px}
+.catches-title{font-size:11px;font-weight:700;color:#7b35cc;margin-bottom:6px}
+.c-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:8px}
+.c-text{font-size:12px;color:#555;flex:1;line-height:1.4}
+.c-btns{display:flex;gap:4px;flex-shrink:0}
+
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn-row button{flex:1;min-width:75px;padding:7px 4px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;border:1px solid;font-family:inherit}
+.b-purple{background:#f3eaff;color:#7b35cc;border-color:#c49ef0}
+.b-yellow{background:#fef9c3;color:#a16207;border-color:#fde68a}
+.b-green{background:#dcfce7;color:#15803d;border-color:#bbf7d0}
+.b-gray{background:#f1f5f9;color:#64748b;border-color:#e2e8f0}
+.b-red{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+.b-tiny{padding:4px 9px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;border:1px solid;font-family:inherit}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:22px}
+@media(min-width:560px){.modal-bg{align-items:center}.modal{border-radius:16px;max-height:88vh;overflow-y:auto}}
+.modal-title{font-size:15px;font-weight:700;color:#7b35cc;margin-bottom:4px}
+.modal-sub{font-size:12px;color:#888;margin-bottom:14px}
+.modal-footer{display:flex;gap:10px;margin-top:6px}
+.modal-footer button{flex:1;padding:11px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;border:none}
+.m-cancel{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0!important}
+.m-save{background:#7b35cc;color:#fff;flex:2}
+
+/* DNR */
+.animal-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0fdf4;font-size:13px}
+.total-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;font-weight:700;border-top:2px solid #f0fdf4;margin-top:4px}
+.year-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.year-tabs button{padding:6px 14px;background:#f5f5f7;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#666;font-family:inherit}
+.year-tabs button.on{background:#7b35cc;border-color:#7b35cc;color:#fff}
+.dnr-hint{font-size:11px;color:#aaa;text-align:center;margin-top:8px}
+
+.empty{text-align:center;padding:50px 0;color:#aaa;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script>
+var ANIMALS    = ["Bat","Bird","Rat","Mouse","Groundhog","Raccoon","Squirrel","Skunk","Other"];
+var TRAP_TYPES = ["Cage Trap","Snap Trap","Glue Trap","Exclusion Device","Other"];
+var DISPS      = ["Released on site","Released off site","Euthanized","Escaped","Still active"];
+var COUNTIES   = ["Alcona","Alger","Allegan","Alpena","Antrim","Arenac","Baraga","Barry","Bay","Benzie","Berrien","Branch","Calhoun","Cass","Charlevoix","Cheboygan","Chippewa","Clare","Clinton","Crawford","Delta","Dickinson","Eaton","Emmet","Genesee","Gladwin","Gogebic","Grand Traverse","Gratiot","Hillsdale","Houghton","Huron","Ingham","Ionia","Iosco","Iron","Isabella","Jackson","Kalamazoo","Kalkaska","Kent","Keweenaw","Lake","Lapeer","Leelanau","Lenawee","Livingston","Luce","Mackinac","Macomb","Manistee","Marquette","Mason","Mecosta","Menominee","Midland","Missaukee","Monroe","Montcalm","Montmorency","Muskegon","Newaygo","Oakland","Oceana","Ogemaw","Ontonagon","Osceola","Oscoda","Otsego","Ottawa","Presque Isle","Roscommon","Saginaw","Sanilac","Schoolcraft","Shiawassee","St. Clair","St. Joseph","Tuscola","Van Buren","Washtenaw","Wayne","Wexford"];
+
+var jobs    = [];
+var tab     = "active";
+var panel   = "none";
+var modal   = null;
+var dnrYear = new Date().getFullYear();
+
+// In-progress traps being built in the new job form
+var formTraps = [newFormTrap()];
+
+function newFormTrap(){
+  return {loc:"", type:TRAP_TYPES[0], animal:ANIMALS[0], notes:""};
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function today(){ return new Date().toISOString().split("T")[0]; }
+function fmtDate(d){ return d ? new Date(d+"T12:00:00").toLocaleDateString() : "—"; }
+
+function save(){ try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){} }
+function load(){
+  try{
+    var r = localStorage.getItem("bwc-jobs")
+         || localStorage.getItem("bwc-traps-v2")
+         || localStorage.getItem("bwc-traps")
+         || localStorage.getItem("bwc-jobs-v1");
+    if(r){ jobs=JSON.parse(r); save(); }
+  }catch(e){}
+}
+
+function counts(){
+  var a=0,i=0,r=0;
+  jobs.forEach(function(j){ (j.traps||[]).forEach(function(t){
+    if(t.status==="active") a++;
+    else if(t.status==="inactive") i++;
+    else r++;
+  }); });
+  return {active:a,inactive:i,archived:r};
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  document.getElementById("root").innerHTML = buildPage();
+  wire();
+}
+
+function buildPage(){
+  var c = counts();
+  var out = "";
+
+  // Header
+  out += '<div class="header"><div><div class="h-title">Trap Tracker</div><div class="h-sub">Boogeyman Wildlife Control LLC</div></div><div class="h-stats">';
+  [["active","#22c55e"],["inactive","#f59e0b"],["archived","#cbd5e1"]].forEach(function(x){
+    out += '<div class="stat"><div class="stat-n" style="color:'+x[1]+'">'+c[x[0]]+'</div><div class="stat-l">'+x[0]+'</div></div>';
+  });
+  out += '</div></div>';
+
+  // Top buttons
+  out += '<div class="top-btns">';
+  out += '<button type="button" id="btn-job">'+(panel==="jobform"?"✕ Cancel":"+ Add New Job")+'</button>';
+  out += '<button type="button" id="btn-dnr">'+(panel==="dnr"?"✕ Close":"DNR Report")+'</button>';
+  out += '</div>';
+
+  if(panel==="jobform") out += buildJobForm();
+  if(panel==="dnr")     out += buildDNRPanel();
+
+  // Tabs
+  out += '<div class="tabs">';
+  ["active","inactive","archived"].forEach(function(t){
+    out += '<button type="button" class="'+(tab===t?"on":"")+'" data-tab="'+t+'">'+cap(t)+(c[t]>0?" ("+c[t]+")":"")+'</button>';
+  });
+  out += '</div>';
+
+  out += buildJobList();
+  if(modal) out += buildModal();
+  return out;
+}
+
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+function buildJobForm(){
+  var n = jobs.length+1;
+  var out = '<div class="card">';
+  out += '<div class="section-hdr">Customer Info</div>';
+  out += '<label>Customer name *</label><input id="jf-name" placeholder="e.g. John Smith"/>';
+  out += '<div class="r2"><div><label>Customer address</label><input id="jf-addr" placeholder="123 Main St"/></div><div><label>Phone</label><input id="jf-phone" placeholder="(517) 555-0000"/></div></div>';
+  out += '<div class="r2"><div><label>County</label><select id="jf-county">'+COUNTIES.map(function(c){ return '<option'+(c==="Eaton"?" selected":"")+'>'+c+'</option>'; }).join("")+'</select></div><div><label>Description</label><input id="jf-desc" placeholder="e.g. Raccoon in attic"/></div></div>';
+  out += '<label>Date started</label><input type="date" id="jf-date" value="'+today()+'"/>';
+
+  out += '<hr class="divider"/>';
+  out += '<div class="section-hdr">Traps</div>';
+  out += '<div class="trap-form-list" id="trap-form-list">';
+  formTraps.forEach(function(t, i){
+    out += buildFormTrapRow(t, i);
+  });
+  out += '</div>';
+  out += '<button type="button" class="btn-add-another" id="btn-add-trap-row">+ Add Another Trap</button>';
+  out += '<button type="button" class="btn-save-job" id="do-savejob">Save Job</button>';
+  out += '</div>';
+  return out;
+}
+
+function buildFormTrapRow(t, i){
+  var out = '<div class="trap-form-item" id="trap-row-'+i+'">';
+  out += '<span class="trap-num-label">Trap '+(i+1)+'</span>';
+  if(i > 0) out += '<button type="button" class="remove-trap-btn" data-removerow="'+i+'">✕</button>';
+  out += '<label>Location *</label><input class="tf-loc" data-idx="'+i+'" placeholder="e.g. North attic" value="'+esc(t.loc)+'"/>';
+  out += '<div class="r2"><div><label>Trap type</label><select class="tf-type" data-idx="'+i+'">'+TRAP_TYPES.map(function(x){ return '<option'+(x===t.type?" selected":"")+'>'+x+'</option>'; }).join("")+'</select></div>';
+  out += '<div><label>Target animal</label><select class="tf-animal" data-idx="'+i+'">'+ANIMALS.map(function(x){ return '<option'+(x===t.animal?" selected":"")+'>'+x+'</option>'; }).join("")+'</select></div></div>';
+  out += '<label>Notes</label><input class="tf-notes" data-idx="'+i+'" placeholder="Optional" value="'+esc(t.notes)+'"/>';
+  out += '</div>';
+  return out;
+}
+
+function esc(s){ return (s||"").replace(/"/g,"&quot;"); }
+
+function buildDNRPanel(){
+  var catches = getAllCatches();
+  var years = [];
+  catches.forEach(function(c){ if(c.date){ var y=new Date(c.date+"T12:00:00").getFullYear(); if(years.indexOf(y)<0) years.push(y); } });
+  years.sort();
+  if(years.length && years.indexOf(dnrYear)<0) dnrYear=years[years.length-1];
+  var fc = catches.filter(function(c){ return c.date && new Date(c.date+"T12:00:00").getFullYear()===dnrYear; });
+  var total = fc.reduce(function(s,c){ return s+Number(c.count); },0);
+
+  var out = '<div class="card green">';
+  out += '<div class="section-hdr green">DNR Compliance Summary &nbsp;· License #GC700</div>';
+  out += '<div class="year-tabs">';
+  if(years.length){ years.forEach(function(y){ out += '<button type="button" class="'+(y===dnrYear?"on":"")+'" data-year="'+y+'">'+y+'</button>'; }); }
+  else out += '<button type="button" class="on">'+dnrYear+'</button>';
+  out += '</div>';
+  var any=false;
+  ANIMALS.forEach(function(a){
+    var t=fc.filter(function(c){ return c.animal===a; }).reduce(function(s,c){ return s+Number(c.count); },0);
+    if(t){ any=true; out += '<div class="animal-row"><span>'+a+'</span><span style="font-weight:700;color:#15803d">'+t+'</span></div>'; }
+  });
+  if(!any) out += '<div style="text-align:center;color:#aaa;font-size:13px;padding:8px 0">No catches for '+dnrYear+'.</div>';
+  out += '<div class="total-row"><span>Total animals ('+dnrYear+')</span><span style="color:#7b35cc">'+total+'</span></div>';
+  out += '<button type="button" class="btn-export" id="do-export">Export / Print DNR Report</button>';
+  out += '<div class="dnr-hint">Opens printable report — save as PDF or print</div>';
+  out += '</div>';
+  return out;
+}
+
+function buildJobList(){
+  var visible = jobs.filter(function(j){ return (j.traps||[]).some(function(t){ return t.status===tab; }); });
+  if(!visible.length) return '<div class="empty">No '+tab+' traps.</div>';
+  return visible.map(function(j){ return buildJobCard(j); }).join("");
+}
+
+function buildJobCard(j){
+  var traps = (j.traps||[]).filter(function(t){ return t.status===tab; });
+  var out = '<div class="job-card">';
+  out += '<div class="job-num">'+j.num+'</div>';
+  out += '<div class="job-top"><div class="job-name">'+j.name+'</div>';
+  out += '<button type="button" class="btn-more-traps" data-morejob="'+j.id+'">+ Add Trap</button></div>';
+  if(j.addr||j.county) out += '<div class="job-meta">'+(j.addr||"")+(j.county?" · "+j.county+" Co.":"")+'</div>';
+  if(j.desc) out += '<div class="job-meta">'+j.desc+'</div>';
+  out += '<div class="job-sub">Started '+fmtDate(j.date)+'</div>';
+  out += traps.map(function(t){ return buildTrapItem(j,t); }).join("");
+  out += '</div>';
+  return out;
+}
+
+function buildTrapItem(j,t){
+  var catches = t.catches||[];
+  var out = '<div class="trap-item '+t.status+'-trap">';
+  out += '<div class="trap-top"><div class="trap-name">'+t.location+'</div><span class="badge '+t.status+'">'+t.status+'</span></div>';
+  out += '<div class="trap-meta">'+t.type+' · '+t.animal+(t.notes?" · "+t.notes:"")+'</div>';
+  if(catches.length){
+    out += '<div class="catches"><div class="catches-title">Animals caught</div>';
+    catches.forEach(function(c){
+      out += '<div class="c-row"><span class="c-text">'+fmtDate(c.date)+" · "+c.count+"x "+c.animal+" · "+c.disp+(c.where?" · "+c.where:"")+(c.notes?" · "+c.notes:"")+'</span>';
+      out += '<div class="c-btns"><button type="button" class="b-tiny b-purple" data-editcatch="'+c.id+'" data-job="'+j.id+'" data-trap="'+t.id+'">Edit</button>';
+      out += '<button type="button" class="b-tiny b-red" data-delcatch="'+c.id+'" data-job="'+j.id+'" data-trap="'+t.id+'">✕</button></div></div>';
+    });
+    out += '</div>';
+  }
+  out += '<div class="btn-row">';
+  if(t.status==="active"){
+    out += '<button type="button" class="b-purple" data-newcatch data-job="'+j.id+'" data-trap="'+t.id+'" data-animal="'+t.animal+'">Animal Caught</button>';
+    out += '<button type="button" class="b-yellow" data-setstatus="inactive" data-job="'+j.id+'" data-trap="'+t.id+'">Inactive</button>';
+    out += '<button type="button" class="b-gray"   data-setstatus="archived" data-job="'+j.id+'" data-trap="'+t.id+'">Archive</button>';
+  } else if(t.status==="inactive"){
+    out += '<button type="button" class="b-purple" data-newcatch data-job="'+j.id+'" data-trap="'+t.id+'" data-animal="'+t.animal+'">Animal Caught</button>';
+    out += '<button type="button" class="b-green"  data-setstatus="active"   data-job="'+j.id+'" data-trap="'+t.id+'">Active</button>';
+    out += '<button type="button" class="b-gray"   data-setstatus="archived" data-job="'+j.id+'" data-trap="'+t.id+'">Archive</button>';
+  } else {
+    out += '<button type="button" class="b-red" data-deltrap data-job="'+j.id+'" data-trap="'+t.id+'">Delete Trap</button>';
+  }
+  out += '</div></div>';
+  return out;
+}
+
+function buildModal(){
+  var out = '<div class="modal-bg" id="modal-bg"><div class="modal">';
+  if(modal.type==="addtrap"){
+    var j = getJob(modal.jobId);
+    out += '<div class="modal-title">Add Trap</div><div class="modal-sub">'+j.num+' — '+j.name+'</div>';
+    out += '<label>Location *</label><input id="tm-loc" placeholder="e.g. North attic, back shed"/>';
+    out += '<div class="r2"><div><label>Trap type</label><select id="tm-type">'+TRAP_TYPES.map(function(t){ return '<option>'+t+'</option>'; }).join("")+'</select></div>';
+    out += '<div><label>Target animal</label><select id="tm-animal">'+ANIMALS.map(function(a){ return '<option>'+a+'</option>'; }).join("")+'</select></div></div>';
+    out += '<label>Notes</label><input id="tm-notes" placeholder="Optional"/>';
+    out += '<div class="modal-footer"><button type="button" class="m-cancel" id="modal-cancel">Cancel</button><button type="button" class="m-save" id="do-addtrap">Add Trap</button></div>';
+  } else if(modal.type==="catch"){
+    var j2=getJob(modal.jobId), t2=getTrap(modal.jobId,modal.trapId);
+    var c2=modal.catchId?getCatch(modal.jobId,modal.trapId,modal.catchId):null;
+    var anim=c2?c2.animal:(modal.animal||t2.animal), cnt=c2?c2.count:1, dt=c2?c2.date:today(), dp=c2?c2.disp:DISPS[0], wh=c2?c2.where||"":"", nt=c2?c2.notes||"":"";
+    var isRel=dp.indexOf("Released")>=0;
+    out += '<div class="modal-title">'+(c2?"Edit Catch":"Animal Caught")+'</div><div class="modal-sub">'+j2.num+' · '+t2.location+'</div>';
+    out += '<div class="r2"><div><label>Animal</label><select id="cm-anim">'+ANIMALS.map(function(a){ return '<option'+(a===anim?" selected":"")+'>'+a+'</option>'; }).join("")+'</select></div>';
+    out += '<div><label>Count</label><input type="number" id="cm-cnt" min="1" value="'+cnt+'"/></div></div>';
+    out += '<label>Date caught</label><input type="date" id="cm-date" value="'+dt+'"/>';
+    out += '<label>What happened to it</label><select id="cm-disp" onchange="toggleRel()">'+DISPS.map(function(d){ return '<option'+(d===dp?" selected":"")+'>'+d+'</option>'; }).join("")+'</select>';
+    out += '<div id="cm-rel-wrap" style="'+(isRel?"":"display:none")+'"><label>Where released?</label><input id="cm-where" value="'+esc(wh)+'" placeholder="e.g. State forest off M-78"/></div>';
+    out += '<label>Notes</label><input id="cm-notes" value="'+esc(nt)+'" placeholder="Optional"/>';
+    out += '<div class="modal-footer"><button type="button" class="m-cancel" id="modal-cancel">Cancel</button><button type="button" class="m-save" id="do-savecatch">Save</button></div>';
+  }
+  out += '</div></div>';
+  return out;
+}
+
+window.toggleRel = function(){
+  var v=(document.getElementById("cm-disp")||{}).value||"";
+  var w=document.getElementById("cm-rel-wrap");
+  if(w) w.style.display=v.indexOf("Released")>=0?"":"none";
+};
+
+// ── WIRE ──────────────────────────────────────────────────────────────────────
+function wire(){
+  on("btn-job", function(){
+    if(panel==="jobform"){ panel="none"; }
+    else { panel="jobform"; formTraps=[newFormTrap()]; }
+    render();
+  });
+  on("btn-dnr", function(){ panel=panel==="dnr"?"none":"dnr"; render(); });
+
+  // Add trap row to form
+  on("btn-add-trap-row", function(){
+    syncFormTraps();
+    formTraps.push(newFormTrap());
+    render();
+    // scroll to new row
+    var list=document.getElementById("trap-form-list");
+    if(list) list.lastElementChild.scrollIntoView({behavior:"smooth",block:"center"});
+  });
+
+  // Remove trap row from form
+  all("[data-removerow]", function(el){
+    el.addEventListener("click", function(){
+      syncFormTraps();
+      var idx=parseInt(el.dataset.removerow);
+      formTraps.splice(idx,1);
+      render();
+    });
+  });
+
+  // Save entire job
+  on("do-savejob", function(){
+    syncFormTraps();
+    var name=gv("jf-name");
+    if(!name){ alert("Customer name is required."); return; }
+    // at least one trap with a location
+    var validTraps=formTraps.filter(function(t){ return t.loc.trim(); });
+    if(!validTraps.length){ alert("Please add at least one trap location."); return; }
+    var newJob = {
+      id:uid(), num:"Job #"+(jobs.length+1),
+      name:name, addr:gv("jf-addr"), phone:gv("jf-phone"),
+      county:gv("jf-county"), desc:gv("jf-desc"), date:gv("jf-date")||today(),
+      traps: validTraps.map(function(t){
+        return {id:uid(), location:t.loc.trim(), type:t.type, animal:t.animal, notes:t.notes, status:"active", catches:[]};
+      })
+    };
+    jobs.push(newJob);
+    panel="none";
+    formTraps=[newFormTrap()];
+    save();
+    render();
+  });
+
+  // DNR export
+  on("do-export", printDNR);
+
+  // Tabs
+  all("[data-tab]", function(el){ el.addEventListener("click", function(){ tab=el.dataset.tab; render(); }); });
+
+  // Year tabs
+  all("[data-year]", function(el){ el.addEventListener("click", function(){ dnrYear=parseInt(el.dataset.year); render(); }); });
+
+  // Add trap to existing job (modal)
+  all("[data-morejob]", function(el){ el.addEventListener("click", function(){ modal={type:"addtrap",jobId:el.dataset.morejob}; render(); }); });
+  on("do-addtrap", function(){
+    var loc=gv("tm-loc"); if(!loc){ alert("Location required."); return; }
+    jobs=jobs.map(function(j){
+      if(j.id!==modal.jobId) return j;
+      var traps=(j.traps||[]).slice();
+      traps.push({id:uid(),location:loc,type:gv("tm-type")||TRAP_TYPES[0],animal:gv("tm-animal")||ANIMALS[0],notes:gv("tm-notes"),status:"active",catches:[]});
+      return Object.assign({},j,{traps:traps});
+    });
+    modal=null; save(); render();
+  });
+
+  // Trap status
+  all("[data-setstatus]", function(el){ el.addEventListener("click", function(){ setTrapStatus(el.dataset.job,el.dataset.trap,el.dataset.setstatus); }); });
+
+  // Delete trap
+  all("[data-deltrap]", function(el){ el.addEventListener("click", function(){ delTrap(el.dataset.job,el.dataset.trap); }); });
+
+  // New catch
+  all("[data-newcatch]", function(el){ el.addEventListener("click", function(){ modal={type:"catch",jobId:el.dataset.job,trapId:el.dataset.trap,catchId:null,animal:el.dataset.animal}; render(); }); });
+
+  // Edit catch
+  all("[data-editcatch]", function(el){ el.addEventListener("click", function(){ modal={type:"catch",jobId:el.dataset.job,trapId:el.dataset.trap,catchId:el.dataset.editcatch}; render(); }); });
+
+  // Delete catch
+  all("[data-delcatch]", function(el){ el.addEventListener("click", function(){ delCatch(el.dataset.job,el.dataset.trap,el.dataset.delcatch); }); });
+
+  // Save catch
+  on("do-savecatch", function(){
+    var disp=gv("cm-disp")||DISPS[0];
+    var entry={id:modal.catchId||uid(),animal:gv("cm-anim")||ANIMALS[0],count:gv("cm-cnt")||1,date:gv("cm-date")||today(),disp:disp,where:disp.indexOf("Released")>=0?gv("cm-where"):"",notes:gv("cm-notes")};
+    jobs=jobs.map(function(j){
+      if(j.id!==modal.jobId) return j;
+      return Object.assign({},j,{traps:(j.traps||[]).map(function(t){
+        if(t.id!==modal.trapId) return t;
+        var catches=modal.catchId?t.catches.map(function(c){ return c.id===modal.catchId?entry:c; }):(t.catches||[]).concat([entry]);
+        return Object.assign({},t,{catches:catches});
+      })});
+    });
+    modal=null; save(); render();
+  });
+
+  // Cancel modal
+  on("modal-cancel", function(){ modal=null; render(); });
+  on("modal-bg", function(e){ if(e.target.id==="modal-bg"){ modal=null; render(); } });
+}
+
+// Sync form trap state from DOM before re-render
+function syncFormTraps(){
+  document.querySelectorAll(".tf-loc").forEach(function(el){
+    var i=parseInt(el.dataset.idx);
+    if(formTraps[i]) formTraps[i].loc=el.value;
+  });
+  document.querySelectorAll(".tf-type").forEach(function(el){
+    var i=parseInt(el.dataset.idx);
+    if(formTraps[i]) formTraps[i].type=el.value;
+  });
+  document.querySelectorAll(".tf-animal").forEach(function(el){
+    var i=parseInt(el.dataset.idx);
+    if(formTraps[i]) formTraps[i].animal=el.value;
+  });
+  document.querySelectorAll(".tf-notes").forEach(function(el){
+    var i=parseInt(el.dataset.idx);
+    if(formTraps[i]) formTraps[i].notes=el.value;
+  });
+}
+
+function on(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener("click",fn); }
+function all(sel,fn){ document.querySelectorAll(sel).forEach(fn); }
+function gv(id){ var el=document.getElementById(id); return el?el.value.trim():""; }
+function getJob(id){ return jobs.find(function(j){ return j.id===id; })||{}; }
+function getTrap(jid,tid){ var j=getJob(jid); return (j.traps||[]).find(function(t){ return t.id===tid; })||{}; }
+function getCatch(jid,tid,cid){ var t=getTrap(jid,tid); return (t.catches||[]).find(function(c){ return c.id===cid; })||null; }
+function getAllCatches(){ var out=[]; jobs.forEach(function(j){ (j.traps||[]).forEach(function(t){ (t.catches||[]).forEach(function(c){ out.push(Object.assign({},c,{job:j,trap:t})); }); }); }); return out; }
+
+function setTrapStatus(jid,tid,status){
+  jobs=jobs.map(function(j){
+    if(j.id!==jid) return j;
+    return Object.assign({},j,{traps:(j.traps||[]).map(function(t){ return t.id===tid?Object.assign({},t,{status:status}):t; })});
+  });
+  save(); render();
+}
+function delTrap(jid,tid){
+  if(!confirm("Delete this trap?")) return;
+  jobs=jobs.map(function(j){
+    if(j.id!==jid) return j;
+    return Object.assign({},j,{traps:(j.traps||[]).filter(function(t){ return t.id!==tid; })});
+  });
+  save(); render();
+}
+function delCatch(jid,tid,cid){
+  if(!confirm("Remove this catch?")) return;
+  jobs=jobs.map(function(j){
+    if(j.id!==jid) return j;
+    return Object.assign({},j,{traps:(j.traps||[]).map(function(t){
+      if(t.id!==tid) return t;
+      return Object.assign({},t,{catches:(t.catches||[]).filter(function(c){ return c.id!==cid; })});
+    })});
+  });
+  save(); render();
+}
+
+function printDNR(){
+  var catches=getAllCatches();
+  var fc=catches.filter(function(c){ return c.date&&new Date(c.date+"T12:00:00").getFullYear()===dnrYear; });
+  fc.sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+  var rows=fc.map(function(c){ return '<tr><td>'+c.job.name+'</td><td>'+(c.job.addr||"—")+'</td><td>'+(c.job.county||"—")+'</td><td>'+fmtDate(c.date)+'</td><td>Sean (Boogeyman Wildlife Control)</td><td>'+c.animal+'</td><td>'+c.count+'</td><td>'+c.disp+'</td><td>'+(c.where||"—")+'</td><td>'+(c.notes||"—")+'</td></tr>'; }).join("");
+  var win=window.open("","_blank");
+  win.document.write('<html><head><title>DNR Report '+dnrYear+'</title><style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px}h2{font-size:15px;margin-bottom:4px}.meta{display:flex;gap:24px;margin:10px 0 14px;font-size:11px;flex-wrap:wrap}table{width:100%;border-collapse:collapse}th{background:#6b21c8;color:#fff;padding:6px 8px;text-align:left;font-size:10px}td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#f9f5ff}.btns{display:flex;gap:10px;margin-bottom:14px}button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px}.back{background:#f1f5f9;color:#374151;border:1px solid #d1d5db!important}.print{background:#6b21c8;color:#fff}@media print{.btns{display:none}}</style></head><body>');
+  win.document.write('<h2>Wildlife Damage &amp; Nuisance Control — Activity Report ('+dnrYear+')</h2>');
+  win.document.write('<div class="meta"><div><b>Operator:</b> Boogeyman Wildlife Control LLC</div><div><b>License #:</b> GC700</div><div><b>Year:</b> '+dnrYear+'</div><div><b>Total:</b> '+fc.reduce(function(s,c){ return s+Number(c.count); },0)+'</div></div>');
+  win.document.write('<div class="btns"><button class="back" onclick="window.close()">← Back</button><button class="print" onclick="window.print()">Print / Save as PDF</button></div>');
+  win.document.write('<table><thead><tr><th>Customer</th><th>Address</th><th>County</th><th>Date</th><th>Technician</th><th>Species</th><th>Count</th><th>Disposition</th><th>Release Location</th><th>Notes</th></tr></thead><tbody>');
+  win.document.write(rows||'<tr><td colspan="10" style="text-align:center;padding:20px;color:#999">No catches for '+dnrYear+'.</td></tr>');
+  win.document.write('</tbody></table></body></html>');
+  win.document.close();
+}
+
+load();
+render();
+</script>
+</body>
+</html>
