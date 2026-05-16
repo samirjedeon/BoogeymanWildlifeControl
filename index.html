@@ -113,7 +113,6 @@ input:focus,select:focus{outline:none;border-color:#7b35cc}
 
 .empty{text-align:center;padding:50px 0;color:#aaa;font-size:14px}
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="wrap" id="root"></div>
@@ -145,71 +144,10 @@ var SUPABASE_URL = "https://uvunhzcidkkfkwtkiwpr.supabase.co";
 var SUPABASE_KEY = "sb_publishable_k4fSIUidYJwQRW6lMTz0fg_wRbYUUlW";
 var RECORD_ID    = "bwc-main";
 
-// Google Drive backup
-var GDRIVE_CLIENT_ID = "471246766217-98sk2o93o3udv8k1ke587tc8djgjt6uv.apps.googleusercontent.com";
-var GDRIVE_SCOPE     = "https://www.googleapis.com/auth/drive.file";
-var gdriveToken      = null;
-var gdriveFolderId   = null;
-var gdriveFileId     = null;
-
-function gdriveSignIn(){
-  var client = google.accounts.oauth2.initTokenClient({
-    client_id: GDRIVE_CLIENT_ID,
-    scope: GDRIVE_SCOPE,
-    callback: function(resp){
-      if(resp.access_token){
-        gdriveToken = resp.access_token;
-        localStorage.setItem("gdrive-token", gdriveToken);
-        gdriveBackup();
-        render();
-      }
-    }
-  });
-  client.requestAccessToken();
-}
-
-function gdriveBackup(){
-  if(!gdriveToken) return;
-  var content = JSON.stringify(jobs, null, 2);
-  var fileName = "boogeyman-trap-data.json";
-  // Find or create the file
-  fetch("https://www.googleapis.com/drive/v3/files?q=name='"+fileName+"'&spaces=drive&fields=files(id,name)", {
-    headers:{ "Authorization": "Bearer "+gdriveToken }
-  }).then(function(r){ return r.json(); })
-  .then(function(data){
-    var fileId = data.files && data.files.length ? data.files[0].id : null;
-    var method = fileId ? "PATCH" : "POST";
-    var url = fileId
-      ? "https://www.googleapis.com/upload/drive/v3/files/"+fileId+"?uploadType=multipart"
-      : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-    var metadata = {name: fileName, mimeType: "application/json"};
-    var boundary = "bwc_boundary";
-    var body = "--"+boundary+"
-Content-Type: application/json
-
-"+JSON.stringify(metadata)+"
---"+boundary+"
-Content-Type: application/json
-
-"+content+"
---"+boundary+"--";
-    return fetch(url, {
-      method: method,
-      headers:{
-        "Authorization": "Bearer "+gdriveToken,
-        "Content-Type": "multipart/related; boundary="+boundary
-      },
-      body: body
-    });
-  }).then(function(r){ return r.json(); })
-  .then(function(f){ console.log("Google Drive backup saved:", f.name); })
-  .catch(function(e){ console.warn("Google Drive backup failed:", e); gdriveToken=null; localStorage.removeItem("gdrive-token"); });
-}
 
 function save(){
   try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){}
   syncToSupabase();
-  if(gdriveToken) gdriveBackup();
 }
 
 function syncToSupabase(){
@@ -466,7 +404,6 @@ window.toggleRel = function(){
 
 // ── WIRE ──────────────────────────────────────────────────────────────────────
 function wire(){
-  on("btn-gdrive", function(){ if(!gdriveToken){ gdriveSignIn(); } else { gdriveBackup(); alert("Backup saved to Google Drive!"); } });
   on("btn-job", function(){
     if(panel==="jobform"){ panel="none"; formCustomer={name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""}; }
     else { panel="jobform"; formTraps=[newFormTrap()]; formCustomer={name:"",addr:"",phone:"",county:"Eaton",desc:"",date:""}; }
@@ -647,8 +584,7 @@ function printDNR(){
   fc.sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
   var rows=fc.map(function(c){ return '<tr><td>'+c.job.name+'</td><td>'+(c.job.addr||"—")+'</td><td>'+(c.job.county||"—")+'</td><td>'+fmtDate(c.date)+'</td><td>Sean (Boogeyman Wildlife Control)</td><td>'+c.animal+'</td><td>'+c.count+'</td><td>'+c.disp+'</td><td>'+(c.where||"—")+'</td><td>'+(c.notes||"—")+'</td></tr>'; }).join("");
   var win=window.open("","_blank");
-  win.document.write('<html><head><title>DNR Report '+dnrYear+'</title><style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px}h2{font-size:15px;margin-bottom:4px}.meta{display:flex;gap:24px;margin:10px 0 14px;font-size:11px;flex-wrap:wrap}table{width:100%;border-collapse:collapse}th{background:#6b21c8;color:#fff;padding:6px 8px;text-align:left;font-size:10px}td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#f9f5ff}.btns{display:flex;gap:10px;margin-bottom:14px}button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px}.back{background:#f1f5f9;color:#374151;border:1px solid #d1d5db!important}.print{background:#6b21c8;color:#fff}@media print{.btns{display:none}}</style>
-<script src="https://accounts.google.com/gsi/client" async defer></script></head><body>');
+  win.document.write('<html><head><title>DNR Report '+dnrYear+'</title><style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px}h2{font-size:15px;margin-bottom:4px}.meta{display:flex;gap:24px;margin:10px 0 14px;font-size:11px;flex-wrap:wrap}table{width:100%;border-collapse:collapse}th{background:#6b21c8;color:#fff;padding:6px 8px;text-align:left;font-size:10px}td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#f9f5ff}.btns{display:flex;gap:10px;margin-bottom:14px}button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px}.back{background:#f1f5f9;color:#374151;border:1px solid #d1d5db!important}.print{background:#6b21c8;color:#fff}@media print{.btns{display:none}}</style></head><body>');
   win.document.write('<h2>Wildlife Damage &amp; Nuisance Control — Activity Report ('+dnrYear+')</h2>');
   win.document.write('<div class="meta"><div><b>Operator:</b> Boogeyman Wildlife Control LLC</div><div><b>License #:</b> GC700</div><div><b>Year:</b> '+dnrYear+'</div><div><b>Total:</b> '+fc.reduce(function(s,c){ return s+Number(c.count); },0)+'</div></div>');
   win.document.write('<div class="btns"><button class="back" onclick="window.close()">← Back</button><button class="print" onclick="window.print()">Print / Save as PDF</button></div>');
