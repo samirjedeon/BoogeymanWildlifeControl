@@ -170,15 +170,7 @@ function syncToSupabase(){
 }
 
 function load(){
-  // Load from localStorage immediately so UI is instant
-  try{
-    var r = localStorage.getItem("bwc-jobs")
-         || localStorage.getItem("bwc-traps-v2")
-         || localStorage.getItem("bwc-traps")
-         || localStorage.getItem("bwc-jobs-v1");
-    if(r){ jobs=JSON.parse(r); }
-  }catch(e){}
-  // Then fetch from Supabase and update if newer
+  // Always fetch from Supabase first — it is the source of truth
   fetch(SUPABASE_URL+"/rest/v1/jobs?id=eq."+RECORD_ID, {
     headers:{
       "apikey": SUPABASE_KEY,
@@ -189,9 +181,26 @@ function load(){
     if(rows && rows.length && rows[0].data){
       jobs = rows[0].data;
       try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){}
-      render();
+    } else {
+      // Nothing in Supabase yet — try localStorage as fallback
+      try{
+        var r = localStorage.getItem("bwc-jobs")
+             || localStorage.getItem("bwc-traps-v2")
+             || localStorage.getItem("bwc-traps")
+             || localStorage.getItem("bwc-jobs-v1");
+        if(r){ jobs=JSON.parse(r); syncToSupabase(); }
+      }catch(e){}
     }
-  }).catch(function(e){ console.warn("Supabase load failed:", e); });
+    render();
+  }).catch(function(e){
+    // Supabase unreachable — fall back to localStorage
+    console.warn("Supabase load failed:", e);
+    try{
+      var r = localStorage.getItem("bwc-jobs");
+      if(r){ jobs=JSON.parse(r); }
+    }catch(e){}
+    render();
+  });
 }
 
 function counts(){
