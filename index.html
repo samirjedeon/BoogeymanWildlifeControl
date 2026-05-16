@@ -118,8 +118,8 @@ input:focus,select:focus{outline:none;border-color:#7b35cc}
 <div class="wrap" id="root"></div>
 <script>
 var ANIMALS    = ["Bat","Bird","Rat","Mouse","Groundhog","Raccoon","Squirrel","Skunk","Other"];
-var TRAP_TYPES = ["Cage Trap","Snap Trap","Glue Trap","Exclusion Device","Other"];
-var DISPS      = ["Released on site","Released off site","Euthanized","Escaped","Still active"];
+var TRAP_TYPES = ["Cage Trap","Snap Trap","Glue Trap","Lethal Trap","Exclusion Device","Other"];
+var DISPS      = ["Released on site","Released off site","Euthanized","Gun","Escaped","Still active"];
 var COUNTIES   = ["Alcona","Alger","Allegan","Alpena","Antrim","Arenac","Baraga","Barry","Bay","Benzie","Berrien","Branch","Calhoun","Cass","Charlevoix","Cheboygan","Chippewa","Clare","Clinton","Crawford","Delta","Dickinson","Eaton","Emmet","Genesee","Gladwin","Gogebic","Grand Traverse","Gratiot","Hillsdale","Houghton","Huron","Ingham","Ionia","Iosco","Iron","Isabella","Jackson","Kalamazoo","Kalkaska","Kent","Keweenaw","Lake","Lapeer","Leelanau","Lenawee","Livingston","Luce","Mackinac","Macomb","Manistee","Marquette","Mason","Mecosta","Menominee","Midland","Missaukee","Monroe","Montcalm","Montmorency","Muskegon","Newaygo","Oakland","Oceana","Ogemaw","Ontonagon","Osceola","Oscoda","Otsego","Ottawa","Presque Isle","Roscommon","Saginaw","Sanilac","Schoolcraft","Shiawassee","St. Clair","St. Joseph","Tuscola","Van Buren","Washtenaw","Wayne","Wexford"];
 
 var jobs    = [];
@@ -140,15 +140,51 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function today(){ return new Date().toISOString().split("T")[0]; }
 function fmtDate(d){ return d ? new Date(d+"T12:00:00").toLocaleDateString() : "—"; }
 
-function save(){ try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){} }
+var SUPABASE_URL = "https://uvunhzcidkkfkwtkiwpr.supabase.co";
+var SUPABASE_KEY = "sb_publishable_k4fSIUidYJwQRW6lMTz0fg_wRbYUUlW";
+var RECORD_ID    = "bwc-main";
+
+function save(){
+  try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){}
+  syncToSupabase();
+}
+
+function syncToSupabase(){
+  fetch(SUPABASE_URL+"/rest/v1/jobs", {
+    method:"POST",
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer "+SUPABASE_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "resolution=merge-duplicates"
+    },
+    body: JSON.stringify({id: RECORD_ID, data: jobs, updated_at: new Date().toISOString()})
+  }).catch(function(e){ console.warn("Supabase sync failed:", e); });
+}
+
 function load(){
+  // Load from localStorage immediately so UI is instant
   try{
     var r = localStorage.getItem("bwc-jobs")
          || localStorage.getItem("bwc-traps-v2")
          || localStorage.getItem("bwc-traps")
          || localStorage.getItem("bwc-jobs-v1");
-    if(r){ jobs=JSON.parse(r); save(); }
+    if(r){ jobs=JSON.parse(r); }
   }catch(e){}
+  // Then fetch from Supabase and update if newer
+  fetch(SUPABASE_URL+"/rest/v1/jobs?id=eq."+RECORD_ID, {
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer "+SUPABASE_KEY
+    }
+  }).then(function(r){ return r.json(); })
+  .then(function(rows){
+    if(rows && rows.length && rows[0].data){
+      jobs = rows[0].data;
+      try{ localStorage.setItem("bwc-jobs", JSON.stringify(jobs)); }catch(e){}
+      render();
+    }
+  }).catch(function(e){ console.warn("Supabase load failed:", e); });
 }
 
 function counts(){
