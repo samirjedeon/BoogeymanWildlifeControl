@@ -120,8 +120,8 @@ input:focus,select:focus{outline:none;border-color:#7b35cc}
 <div class="wrap" id="root"></div>
 <script>
 var ANIMALS    = ["Bat","Bird","Rat","Mouse","Groundhog","Raccoon","Squirrel","Skunk","Other"];
-var TRAP_TYPES = ["Cage Trap","Snap Trap","Glue Trap","Lethal Trap","Exclusion Device","Other"];
-var DISPS      = ["Released on site","Released off site","Euthanized","Gun","Escaped","Still active"];
+var TRAP_TYPES = ["Live Trap","Lethal Trap","Glue Trap"];
+var DISPS      = ["Released offsite","Euthanized","Gun","Lethal Trap"];
 var COUNTIES   = ["Alcona","Alger","Allegan","Alpena","Antrim","Arenac","Baraga","Barry","Bay","Benzie","Berrien","Branch","Calhoun","Cass","Charlevoix","Cheboygan","Chippewa","Clare","Clinton","Crawford","Delta","Dickinson","Eaton","Emmet","Genesee","Gladwin","Gogebic","Grand Traverse","Gratiot","Hillsdale","Houghton","Huron","Ingham","Ionia","Iosco","Iron","Isabella","Jackson","Kalamazoo","Kalkaska","Kent","Keweenaw","Lake","Lapeer","Leelanau","Lenawee","Livingston","Luce","Mackinac","Macomb","Manistee","Marquette","Mason","Mecosta","Menominee","Midland","Missaukee","Monroe","Montcalm","Montmorency","Muskegon","Newaygo","Oakland","Oceana","Ogemaw","Ontonagon","Osceola","Oscoda","Otsego","Ottawa","Presque Isle","Roscommon","Saginaw","Sanilac","Schoolcraft","Shiawassee","St. Clair","St. Joseph","Tuscola","Van Buren","Washtenaw","Wayne","Wexford"];
 
 var jobs    = [];
@@ -331,7 +331,10 @@ function buildJobCard(j){
   var out = '<div class="job-card">';
   out += '<div class="job-num">'+j.num+'</div>';
   out += '<div class="job-top"><div class="job-name">'+j.name+'</div>';
-  out += '<button type="button" class="btn-more-traps" data-morejob="'+j.id+'">+ Add Trap</button></div>';
+  out += '<div style="display:flex;gap:6px">';
+  out += '<button type="button" class="btn-more-traps" data-editjob="'+j.id+'" style="background:#fff8e1;border-color:#fde68a;color:#a16207">✏ Edit</button>';
+  out += '<button type="button" class="btn-more-traps" data-morejob="'+j.id+'">+ Add Trap</button>';
+  out += '</div></div>';
   if(j.addr||j.county) out += '<div class="job-meta">'+(j.addr||"")+(j.county?" · "+j.county+" Co.":"")+'</div>';
   if(j.desc) out += '<div class="job-meta">'+j.desc+'</div>';
   out += '<div class="job-sub">Started '+fmtDate(j.date)+'</div>';
@@ -372,7 +375,15 @@ function buildTrapItem(j,t){
 
 function buildModal(){
   var out = '<div class="modal-bg" id="modal-bg"><div class="modal">';
-  if(modal.type==="addtrap"){
+  if(modal.type==="editjob"){
+    var j = getJob(modal.jobId);
+    out += '<div class="modal-title">Edit Job</div><div class="modal-sub">'+j.num+'</div>';
+    out += '<label>Customer name *</label><input id="ej-name" value="'+esc(j.name)+'"/>';
+    out += '<div class="r2"><div><label>Address</label><input id="ej-addr" value="'+esc(j.addr||'')+'"/></div><div><label>Phone</label><input id="ej-phone" value="'+esc(j.phone||'')+'"/></div></div>';
+    out += '<div class="r2"><div><label>County</label><select id="ej-county">'+COUNTIES.map(function(c){ return '<option'+(c===(j.county||'Eaton')?' selected':'')+'>'+c+'</option>'; }).join('')+'</select></div><div><label>Description</label><input id="ej-desc" value="'+esc(j.desc||'')+'"/></div></div>';
+    out += '<label>Date started</label><input type="date" id="ej-date" value="'+(j.date||today())+'"/>';
+    out += '<div class="modal-footer"><button type="button" class="m-cancel" id="modal-cancel">Cancel</button><button type="button" class="m-save" id="do-saveeditjob">Save Changes</button></div>';
+  } else if(modal.type==="addtrap"){
     var j = getJob(modal.jobId);
     out += '<div class="modal-title">Add Trap</div><div class="modal-sub">'+j.num+' — '+j.name+'</div>';
     out += '<label>Location *</label><input id="tm-loc" placeholder="e.g. North attic, back shed"/>';
@@ -384,7 +395,7 @@ function buildModal(){
     var j2=getJob(modal.jobId), t2=getTrap(modal.jobId,modal.trapId);
     var c2=modal.catchId?getCatch(modal.jobId,modal.trapId,modal.catchId):null;
     var anim=c2?c2.animal:(modal.animal||t2.animal), cnt=c2?c2.count:1, dt=c2?c2.date:today(), dp=c2?c2.disp:DISPS[0], wh=c2?c2.where||"":"", nt=c2?c2.notes||"":"";
-    var isRel=dp.indexOf("Released")>=0;
+    var isRel=dp==="Released offsite";
     out += '<div class="modal-title">'+(c2?"Edit Catch":"Animal Caught")+'</div><div class="modal-sub">'+j2.num+' · '+t2.location+'</div>';
     out += '<div class="r2"><div><label>Animal</label><select id="cm-anim">'+ANIMALS.map(function(a){ return '<option'+(a===anim?" selected":"")+'>'+a+'</option>'; }).join("")+'</select></div>';
     out += '<div><label>Count</label><input type="number" id="cm-cnt" min="1" value="'+cnt+'"/></div></div>';
@@ -470,7 +481,24 @@ function wire(){
   all("[data-year]", function(el){ el.addEventListener("click", function(){ dnrYear=parseInt(el.dataset.year); render(); }); });
 
   // Add trap to existing job (modal)
+  all("[data-editjob]", function(el){ el.addEventListener("click", function(){ modal={type:"editjob",jobId:el.dataset.editjob}; render(); }); });
   all("[data-morejob]", function(el){ el.addEventListener("click", function(){ modal={type:"addtrap",jobId:el.dataset.morejob}; render(); }); });
+  on("do-saveeditjob", function(){
+    var name = gv("ej-name");
+    if(!name){ alert("Customer name is required."); return; }
+    jobs = jobs.map(function(j){
+      if(j.id !== modal.jobId) return j;
+      return Object.assign({}, j, {
+        name: name,
+        addr: gv("ej-addr"),
+        phone: gv("ej-phone"),
+        county: gv("ej-county"),
+        desc: gv("ej-desc"),
+        date: gv("ej-date")||j.date
+      });
+    });
+    modal=null; save(); render();
+  });
   on("do-addtrap", function(){
     var loc=gv("tm-loc"); if(!loc){ alert("Location required."); return; }
     jobs=jobs.map(function(j){
