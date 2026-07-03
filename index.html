@@ -367,7 +367,9 @@ function buildTrapItem(j,t){
     out += '<button type="button" class="b-green"  data-setstatus="active"   data-job="'+j.id+'" data-trap="'+t.id+'">Active</button>';
     out += '<button type="button" class="b-gray"   data-setstatus="archived" data-job="'+j.id+'" data-trap="'+t.id+'">Archive</button>';
   } else {
-    out += '<button type="button" class="b-red" data-deltrap data-job="'+j.id+'" data-trap="'+t.id+'">Delete Trap</button>';
+    out += '<button type="button" class="b-green"  data-setstatus="active"   data-job="'+j.id+'" data-trap="'+t.id+'">Make Active</button>';
+    out += '<button type="button" class="b-yellow" data-setstatus="inactive" data-job="'+j.id+'" data-trap="'+t.id+'">Make Inactive</button>';
+    out += '<button type="button" class="b-red"    data-deltrap data-job="'+j.id+'" data-trap="'+t.id+'">Delete</button>';
   }
   out += '</div></div>';
   return out;
